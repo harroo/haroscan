@@ -13,102 +13,163 @@ public class SimpleTest : MonoBehaviour {
     private Thread barcodeThread;
 
     private Color32[] pixelArray;
-    private int width, height;
+    private int widthRes = 820, heightRes = 320;
 
     private Rect screenRect;
 
 
     private void Start () {
 
-        screenRect = new Rect (0, 0, Screen.width, Screen.height);
+        screenRect = new Rect (0, 0, widthRes, heightRes);
 
         camTexture = new WebCamTexture();
-        camTexture.requestedHeight = Screen.height;
-        camTexture.requestedWidth = Screen.width;
+        camTexture.requestedWidth = widthRes;
+        camTexture.requestedHeight = heightRes;
         camTexture.Play();
-        width = camTexture.width;
-        height = camTexture.height;
+
+        display.texture = camTexture;
 
         barcodeThread = new Thread(()=>DecodeLoop());
         barcodeThread.Start();
     }
 
 
-    public RawImage imagething;
+    public RawImage display;
+    public Text resultText;
+
+    private float timer;
+    int x=0;
 
     private void Update () {
 
-        // if (pixelArray == null)
-        //     pixelArray = camTexture.GetPixel32();
+        if (timer < 0) { timer = 1.0f;
 
-        if (Input.GetKey(KeyCode.R)) {
+            // Texture2D uncroppedTexture = new Texture2D(widthRes, heightRes);
+            // uncroppedTexture.SetPixels32(camTexture.GetPixels32());
+            // Texture2D croppedTexture = TextureTools.ResampleAndCrop(uncroppedTexture, widthRes / 3, heightRes);
+            // pixelArray = croppedTexture.GetPixels32();
 
-            Texture2D texture = new Texture2D(2, 2);
-            texture.LoadImage(System.IO.File.ReadAllBytes("/home/haro/Downloads/barcode1.png"));
+            // widthRes = croppedTexture.width;
+            // heightRes = croppedTexture.height;
 
-            imagething.texture = texture;
+            // IBarcodeReader reader = new BarcodeReader{
+            //
+            //     AutoRotate = true,
+            //
+            //     Options = new Auki.Barcode.Common.DecodingOptions{
+            //
+            //         TryHarder = true
+            //     }
+            // };
+            // var result = reader.Decode(camTexture.GetPixels32(), widthRes, heightRes);
+            // if (result != null)
+            //     resultText.text = result.Text;
+            // else resultText.text = "failed" + (x++);
 
-            pixelArray = texture.GetPixels32();
+            // display.texture = croppedTexture;
 
-            IBarcodeReader reader = new BarcodeReader();
+        } else timer -= Time.deltaTime;
 
-            var result = reader.Decode(pixelArray, texture.width, texture.height);
-            if (result != null) {
+        if (cache != output) {
 
-                CheckResult(result.Text);
-            }
+            cache = output;
+
+            resultText.text = output;
         }
+
+        // if (pixelArray == null)
+        //     pixelArray = camTexture.GetPixels32();
+
+        // if (Input.GetKey(KeyCode.R)) {
+        //
+        //     Texture2D texture = new Texture2D(2, 2);
+        //     texture.LoadImage(System.IO.File.ReadAllBytes("/home/haro/Downloads/barcode1.png"));
+        //
+        //     widthRes = texture.width;
+        //     heightRes = texture.height;
+        //
+        //     display.texture = texture;
+        //
+        //     pixelArray = texture.GetPixels32();
+        //
+        //     // IBarcodeReader reader = new BarcodeReader();
+        //     //
+        //     // var result = reader.Decode(pixelArray, texture.width, texture.height);
+        //     // if (result != null) {
+        //     //
+        //     //     CheckResult(result.Text);
+        //     // }
+        //
+        //     // Texture2D cropTexture = new Texture2D(widthRes, heightRes);
+        //     // int third = cropTexture.height / 3;
+        //     // Texture2D newTexture = new Texture2D(widthRes, third);
+        //     //
+        //     // cropTexture.SetPixels32(pixelArray);Debug.Log(third + " " + newTexture.width + " " + newTexture.height +  " "+ cropTexture.width + " " + cropTexture.height +  " ");
+        //     //
+        //     // for (int y = 0; y < third; ++y){
+        //     //     for (int x = 0; x < cropTexture.width; ++x){
+        //     //         newTexture.SetPixel(x, y, cropTexture.GetPixel(x, third + y));}}
+        //     //
+        //     // newTexture.Apply();
+        //     // pixelArray = newTexture.GetPixels32();
+        //
+        //     //Debug.Log("asd");
+        //
+        //     Texture2D uncroppedTexture = new Texture2D(widthRes, heightRes);
+        //     uncroppedTexture.SetPixels32(pixelArray);
+        //     Texture2D croppedTexture = TextureTools.ResampleAndCrop(uncroppedTexture, widthRes, heightRes / 3);
+        //     pixelArray = croppedTexture.GetPixels32();
+        //     widthRes = croppedTexture.width;
+        //     heightRes = croppedTexture.height;
+        //
+        //     IBarcodeReader reader = new BarcodeReader{
+        //
+        //         AutoRotate = true,
+        //
+        //         Options = new Auki.Barcode.Common.DecodingOptions{
+        //
+        //             TryHarder = true
+        //         }
+        //     };
+        //     var result = reader.Decode(pixelArray, croppedTexture.width, croppedTexture.height);
+        //     if (result != null)
+        //         resultText.text = result.Text;
+        //
+        //     display.texture = croppedTexture;
+        // }
     }
 
-
-    private void OnDestroy () {
-
-        barcodeThread.Abort();
-        camTexture.Stop();
-    }
-
-    private void OnApplicationQuit () {
-
-        shouldStop = true;
-    }
-
-
-    private string resultCache = "";
-
-    private void CheckResult (string result) {
-
-        if (resultCache == result) return;
-        resultCache = result;
-
-        Debug.Log(result);
-    }
-
-
-    private bool shouldStop = false;
+    private string cache, output;
 
     private void DecodeLoop () {
 
-        IBarcodeReader reader = new BarcodeReader();
-
         while (true) {
-
-            if (shouldStop) break;
 
             try {
 
-                if (pixelArray == null) continue;
+                IBarcodeReader reader = new BarcodeReader{
 
-                var result = reader.Decode(pixelArray, width, height);
+                    AutoRotate = true,
 
-                if (result != null) {
+                    Options = new Auki.Barcode.Common.DecodingOptions{
 
-                    CheckResult(result.Text);
-                }
+                        TryHarder = true
+                    }
+                };
+                var result = reader.Decode(camTexture.GetPixels32(), widthRes, heightRes);
+                if (result != null)
+                    output = result.Text;
+                else output = "failed" + (x++);
 
                 Thread.Sleep(256);
-                pixelArray = null;
 
             } catch {}
         }
+    }
+
+    private void OnDestroy () {
+
+        camTexture.Stop();
+        barcodeThread.Abort();
     }
 }
