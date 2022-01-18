@@ -35,7 +35,8 @@ public class Scan : MonoBehaviour {
 
 
     public RawImage display;
-    public Text resultText;
+    public Text resultText, countText;
+    public AudioSource scanSound;
 
     private void Update () {
 
@@ -54,10 +55,16 @@ public class Scan : MonoBehaviour {
 
         if (output.Length != 16) return;
 
-        resultText.text = output;
+        if (Cache.results.Contains(output)) return;
 
         Cache.results.Add(output);
         Cache.totalScanned++;
+        Cache.Save();
+
+        resultText.text = output;
+        countText.text = Cache.totalScanned.ToString();
+
+        scanSound.Play();
     }
 
     private string cache, output;
