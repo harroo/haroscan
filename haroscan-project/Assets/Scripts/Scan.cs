@@ -31,6 +31,8 @@ public class Scan : MonoBehaviour {
 
         barcodeThread = new Thread(()=>DecodeLoop());
         barcodeThread.Start();
+        
+        countText.text = Cache.totalScanned.ToString();
     }
 
 
